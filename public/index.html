@@ -114,14 +114,28 @@
     </footer>
   </div>
 
-  <!-- Cargar Stripe.js -->
-  <!-- Cargar Stripe.js -->
+  
+ <!-- Cargar Stripe.js -->
 <script src="https://js.stripe.com/v3/ "></script>
+
+<!-- Tu formulario y botón -->
+<form id="payment-form">
+  <input type="email" id="email" placeholder="Correo electrónico" required />
+  <input type="tel" id="phone" placeholder="Teléfono" required />
+  <select id="schedule" required>
+    <option value="">Selecciona un horario</option>
+    <option value="morning">Mañana</option>
+    <option value="afternoon">Tarde</option>
+  </select>
+  <button type="submit" class="btn-checkout">Pagar con Tarjeta o Affirm</button>
+</form>
+
+<!-- Script de Stripe -->
 <script>
-  const stripe = Stripe(process.env.STRIPE_PUBLIC_KEY || 'pk_test_XXXXXXXXXXXXXXXXXXXXXXXX');
+  const stripe = Stripe('pk_test_51ReSRVQQL3g2vHegQXe1EM7hOnVNCXuYR9jHCtQnglsRXFEAzPW7fnryzT7i4uNeJJwut5VBe3mz0AkQIpa7mhs5001xeKKxy7');
 
   document.getElementById("payment-form").addEventListener("submit", async function(e) {
-    e.preventDefault(); // ✅ Evita que la página se recargue
+    e.preventDefault();
 
     const email = document.getElementById("email").value;
     const phone = document.getElementById("phone").value;
