@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jardinería Pro - Pagar</title>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+
+  <!-- Bootstrap CSS (opcional pero recomendado) -->
+  <link href=" https://cdn.jsdelivr.net/npm/bootstrap @5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Estilos personalizados -->
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: linear-gradient(-45deg, #66bb6a, #81c784, #388e3c);
+      background-size: 400% 400%;
+      animation: gradientBG 15s ease infinite;
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2rem;
+    }
+
+    @keyframes gradientBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .form-container {
+      background-color: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 12px;
+      padding: 2rem;
+      max-width: 500px;
+      margin: auto;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      font-weight: 700;
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+      color: #fff;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+    }
+
+    p.lead {
+      font-size: 1.2rem;
+      margin-bottom: 2rem;
+      color: #f0f0f0;
+    }
+
+    .form-control, .form-select {
+      background-color: rgba(255, 255, 255, 0.9);
+      border: none;
+      margin-bottom: 1rem;
+      border-radius: 6px;
+      padding: 0.6rem 1rem;
+    }
+
+    .btn-checkout {
+      background-color: #ffffff;
+      color: #388e3c;
+      font-weight: bold;
+      padding: 0.8rem 2rem;
+      font-size: 1.1rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-checkout:hover {
+      background-color: #f5f5f5;
+      transform: scale(1.02);
+    }
+
+    footer {
+      margin-top: 2rem;
+      font-size: 0.9rem;
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body>
+  <div class="form-container">
+    <h1>🌿 Jardinería Pro</h1>
+    <p class="lead">Por favor ingresa tus datos antes de pagar.</p>
+
+    <form id="payment-form">
+      <input type="email" id="email" class="form-control" placeholder="Correo electrónico" required />
+
+      <input type="tel" id="phone" class="form-control" placeholder="Teléfono (ej: +1 555 123 4567)" required />
+
+      <select id="schedule" class="form-select" required>
+        <option value="">Selecciona un horario</option>
+        <option value="morning">Mañana (8 AM - 12 PM)</option>
+        <option value="afternoon">Tarde (12 PM - 5 PM)</option>
+        <option value="evening">Noche (5 PM - 8 PM)</option>
+      </select>
+
+      <button type="submit" class="btn-checkout btn-lg w-100 mt-3">Pagar con Tarjeta o Affirm</button>
+    </form>
+
+    <footer class="mt-4">
+      &copy; 2025 Jardinería Pro. Todos los derechos reservados.
+    </footer>
+  </div>
+
+  <!-- Cargar Stripe.js -->
+  <!-- Cargar Stripe.js -->
+<script src="https://js.stripe.com/v3/ "></script>
+<script>
+  const stripe = Stripe();
+
+  document.getElementById("payment-form").addEventListener("submit", async function(e) {
+    e.preventDefault(); // ✅ Evita que la página se recargue
+
+    const email = document.getElementById("email").value;
+    const phone = document.getElementById("phone").value;
+    const schedule = document.getElementById("schedule").value;
+
+    if (!email || !phone || !schedule) {
+      alert("Por favor, completa todos los campos.");
+      return;
+    }
+
+    try {
+      const response = await fetch("/create-checkout-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, phone, schedule })
+      });
+
+      const session = await response.json();
+
+      const result = await stripe.redirectToCheckout({
+        sessionId: session.id
+      });
+
+      if (result.error) {
+        alert(result.error.message);
+      }
+    } catch (error) {
+      console.error("Error al iniciar pago:", error);
+      alert("Hubo un problema al abrir Stripe.");
+    }
+  });
+</script>
+</body>
+</html>

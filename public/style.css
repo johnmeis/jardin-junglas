@@ -1,0 +1,60 @@
+body {
+  font-family: 'Roboto', sans-serif;
+  color: #fff;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem;
+}
+
+.hero {
+  text-align: center;
+}
+
+.btn-checkout {
+  background-color: #ffffff;
+  color: #388e3c;
+  border: none;
+  padding: 0.9rem 2.2rem;
+  font-size: 1.1rem;
+  border-radius: 5px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.btn-checkout:hover {
+  background-color: #f5f5f5;
+  transform: scale(1.05);
+}
+
+.features {
+  display: flex;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  margin-top: 3rem;
+}
+
+.feature {
+  width: 30%;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 1rem;
+  border-radius: 8px;
+  margin: 1rem 1%;
+  text-align: center;
+}
+
+.feature i {
+  font-size: 2rem;
+  color: #fff;
+  margin-bottom: 0.5rem;
+}
+
+footer {
+  margin-top: 5rem;
+  text-align: center;
+  color: #fff;
+  opacity: 0.7;
+}
