@@ -1,3 +1,4 @@
+// server.js
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
@@ -5,17 +6,18 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const app = express();
 
-// ✅ 1. Middlewares para recibir datos
+// Middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, 'public')));
 
-// ✅ 2. Tus rutas van primero
+// Ruta principal
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// Crear sesión de Stripe
 app.post('/create-checkout-session', async (req, res) => {
-  // Aquí ya puedes desestructurar sin problemas
   const { email, phone, schedule } = req.body;
 
   try {
@@ -25,7 +27,7 @@ app.post('/create-checkout-session', async (req, res) => {
         price_data: {
           currency: 'usd',
           product_data: {
-            name: 'Servicio de Jardinería',
+            name: 'Servicio de Jardinería'
           },
           unit_amount: 5000,
         },
@@ -44,6 +46,7 @@ app.post('/create-checkout-session', async (req, res) => {
   }
 });
 
+// Páginas de éxito y cancelación
 app.get('/success', (req, res) => {
   res.send('<h1>✅ ¡Pago exitoso!</h1>');
 });
@@ -52,10 +55,7 @@ app.get('/cancel', (req, res) => {
   res.send('<h1>❌ Pago cancelado</h1>');
 });
 
-// ✅ 3. Servir archivos estáticos al final
-app.use(express.static(path.join(__dirname, 'public')));
-
-// ✅ Iniciar servidor
+// Iniciar servidor
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
