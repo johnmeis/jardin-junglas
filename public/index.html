@@ -118,7 +118,7 @@
   <!-- Cargar Stripe.js -->
 <script src="https://js.stripe.com/v3/ "></script>
 <script>
-  const stripe = Stripe('pk_test_51ReSRVQQL3g2vHegQXe1EM7hOnVNCXuYR9jHCtQnglsRXFEAzPW7fnryzT7i4uNeJJwut5VBe3mz0AkQIpa7mhs5001xeKKxy7');
+  const stripe = Stripe(process.env.STRIPE_PUBLIC_KEY || 'pk_test_XXXXXXXXXXXXXXXXXXXXXXXX');
 
   document.getElementById("payment-form").addEventListener("submit", async function(e) {
     e.preventDefault(); // ✅ Evita que la página se recargue
