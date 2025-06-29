@@ -1,0 +1,9 @@
+# Carpetas ignoradas
+node_modules/
+.env
+.DS_Store
+*.log
+
+# Archivos específicos
+ngrok.exe
+test-stripe.js
