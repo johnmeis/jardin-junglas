@@ -24,15 +24,15 @@ app.post('/create-checkout-session', async (req, res) => {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card', 'affirm'],
       line_items: [{
-        price_data: {
-          currency: 'usd',
-          product_data: {
-            name: 'Servicio de Jardinería'
-          },
-          unit_amount: 5000,
-        },
-        quantity: 1
-      }],
+  price_data: {
+    currency: 'usd',
+    product_data: {
+      name: 'Servicio de Jardinería'
+    },
+    unit_amount: 8990, // $89.90 USD
+  },
+  quantity: 1
+}],
       mode: 'payment',
       success_url: `${req.headers.origin}/success`,
       cancel_url: `${req.headers.origin}/cancel`,
