@@ -1,9 +1,7 @@
-# Carpetas ignoradas
-node_modules/
+# Archivos sensibles
 .env
-.DS_Store
-*.log
-
-# Archivos específicos
-ngrok.exe
-test-stripe.js
+.env.local
+.env.development
+.env.test
+.env.production
+.env.staging
