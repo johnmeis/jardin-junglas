@@ -2,90 +2,265 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Jardinería Pro - Pagar</title>
-
   <!-- Cargar Stripe -->
-  <script src="https://js.stripe.com/v3/ "></script>
-
+  <script src="https://js.stripe.com/v3/"></script>
   <!-- Estilos básicos -->
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background: #e0f7fa;
+      font-family: 'Arial', sans-serif;
+      background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%);
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
+      min-height: 100vh;
       margin: 0;
+      padding: 20px;
+      box-sizing: border-box;
     }
-
     .form-container {
       background: white;
       padding: 2rem;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      border-radius: 15px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
       color: #333;
       width: 100%;
-      max-width: 400px;
+      max-width: 420px;
     }
-
-    input, select, button {
+    .header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .header h2 {
+      color: #388e3c;
+      margin-bottom: 0.5rem;
+    }
+    .header p {
+      color: #666;
+      margin: 0;
+    }
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: #555;
+      font-weight: 500;
+    }
+    input, select {
       width: 100%;
       padding: 12px;
-      margin: 10px 0;
-      border: 1px solid #ccc;
-      border-radius: 5px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 16px;
+      transition: border-color 0.3s ease;
+      box-sizing: border-box;
     }
-
+    input:focus, select:focus {
+      outline: none;
+      border-color: #66bb6a;
+    }
+    .btn-container {
+      margin-top: 2rem;
+    }
     button {
+      width: 100%;
+      padding: 15px;
       background-color: #66bb6a;
       color: white;
       border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
       cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
-
-    button:hover {
+    button:hover:not(:disabled) {
       background-color: #388e3c;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102, 187, 106, 0.4);
+    }
+    button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    .loading {
+      display: none;
+      text-align: center;
+      margin-top: 1rem;
+      color: #666;
+    }
+    .error {
+      color: #f44336;
+      font-size: 14px;
+      margin-top: 0.5rem;
+      display: none;
+    }
+    .price-info {
+      background: #f8f9fa;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
+    .price {
+      font-size: 24px;
+      font-weight: bold;
+      color: #388e3c;
+    }
+    .security-info {
+      font-size: 12px;
+      color: #888;
+      text-align: center;
+      margin-top: 1rem;
+    }
+    .security-info i {
+      margin-right: 5px;
     }
   </style>
 </head>
 <body>
   <div class="form-container">
-    <h2>🌿 Jardinería Pro</h2>
-    <p>Por favor ingresa tus datos antes de pagar.</p>
+    <div class="header">
+      <h2>🌿 Jardinería Pro</h2>
+      <p>Completa tus datos para continuar con el pago</p>
+    </div>
+
+    <div class="price-info">
+      <div class="price">$89.90 USD</div>
+      <small>Servicio de jardinería profesional</small>
+    </div>
 
     <form id="payment-form">
-      <input type="email" id="email" placeholder="Correo electrónico" required />
-      <input type="tel" id="phone" placeholder="Teléfono" required />
-      <select id="schedule" required>
-        <option value="">Selecciona un horario</option>
-        <option value="morning">Mañana (8 AM - 12 PM)</option>
-        <option value="afternoon">Tarde (12 PM - 5 PM)</option>
-        <option value="evening">Noche (5 PM - 8 PM)</option>
-      </select>
+      <div class="form-group">
+        <label for="email">Correo electrónico</label>
+        <input type="email" id="email" name="email" placeholder="tu@email.com" required />
+        <div class="error" id="email-error"></div>
+      </div>
 
-      <button type="submit" id="checkout-button">Pagar con Tarjeta o Affirm</button>
+      <div class="form-group">
+        <label for="phone">Número de teléfono</label>
+        <input type="tel" id="phone" name="phone" placeholder="+1 (555) 123-4567" required />
+        <div class="error" id="phone-error"></div>
+      </div>
+
+      <div class="form-group">
+        <label for="schedule">Horario preferido</label>
+        <select id="schedule" name="schedule" required>
+          <option value="">Selecciona un horario</option>
+          <option value="morning">Mañana (8:00 AM - 12:00 PM)</option>
+          <option value="afternoon">Tarde (12:00 PM - 5:00 PM)</option>
+          <option value="evening">Noche (5:00 PM - 8:00 PM)</option>
+        </select>
+        <div class="error" id="schedule-error"></div>
+      </div>
+
+      <div class="btn-container">
+        <button type="submit" id="checkout-button">
+          Proceder al pago seguro
+        </button>
+      </div>
+
+      <div class="loading" id="loading">
+        <p>🔄 Redirigiendo a Stripe...</p>
+      </div>
+
+      <div class="security-info">
+        🔒 Pago seguro procesado por Stripe
+      </div>
     </form>
   </div>
 
   <!-- Script de Stripe -->
   <script>
-    // Usa tu clave pública desde Render.com → inyectada como variable de entorno
+    // Inicializar Stripe con tu clave pública
     const stripe = Stripe('pk_test_51ReSRVQQL3g2vHegQXe1EM7hOnVNCXuYR9jHCtQnglsRXFEAzPW7fnryzT7i4uNeJJwut5VBe3mz0AkQIpa7mhs5001xeKKxy7');
+    
+    const form = document.getElementById("payment-form");
+    const checkoutButton = document.getElementById("checkout-button");
+    const loadingDiv = document.getElementById("loading");
 
-    document.getElementById("payment-form").addEventListener("submit", async function(e) {
+    // Función para mostrar errores
+    function showError(fieldId, message) {
+      const errorDiv = document.getElementById(fieldId + '-error');
+      errorDiv.textContent = message;
+      errorDiv.style.display = 'block';
+    }
+
+    // Función para limpiar errores
+    function clearErrors() {
+      const errors = document.querySelectorAll('.error');
+      errors.forEach(error => {
+        error.style.display = 'none';
+        error.textContent = '';
+      });
+    }
+
+    // Validación de email
+    function validateEmail(email) {
+      const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return re.test(email);
+    }
+
+    // Validación de teléfono básica
+    function validatePhone(phone) {
+      const re = /^[\+]?[\d\s\-\(\)]{10,}$/;
+      return re.test(phone.replace(/\s/g, ''));
+    }
+
+    form.addEventListener("submit", async function(e) {
       e.preventDefault();
-
+      
+      // Limpiar errores previos
+      clearErrors();
+      
+      // Obtener valores del formulario
       const email = document.getElementById("email").value.trim();
       const phone = document.getElementById("phone").value.trim();
       const schedule = document.getElementById("schedule").value;
-
-      if (!email || !phone || !schedule) {
-        alert("Completa todos los campos");
+      
+      // Validaciones
+      let hasErrors = false;
+      
+      if (!email) {
+        showError('email', 'El correo electrónico es requerido');
+        hasErrors = true;
+      } else if (!validateEmail(email)) {
+        showError('email', 'Ingresa un correo electrónico válido');
+        hasErrors = true;
+      }
+      
+      if (!phone) {
+        showError('phone', 'El teléfono es requerido');
+        hasErrors = true;
+      } else if (!validatePhone(phone)) {
+        showError('phone', 'Ingresa un número de teléfono válido');
+        hasErrors = true;
+      }
+      
+      if (!schedule) {
+        showError('schedule', 'Debes seleccionar un horario');
+        hasErrors = true;
+      }
+      
+      if (hasErrors) {
         return;
       }
 
+      // Deshabilitar botón y mostrar loading
+      checkoutButton.disabled = true;
+      checkoutButton.textContent = 'Procesando...';
+      loadingDiv.style.display = 'block';
+
       try {
+        console.log('Enviando datos al servidor:', { email, phone, schedule });
+        
         const response = await fetch("/create-checkout-session", {
           method: "POST",
           headers: {
@@ -94,18 +269,59 @@
           body: JSON.stringify({ email, phone, schedule })
         });
 
-        const session = await response.json();
+        console.log('Respuesta del servidor:', response.status);
+        
+        if (!response.ok) {
+          throw new Error(`Error del servidor: ${response.status}`);
+        }
 
+        const session = await response.json();
+        console.log('Sesión recibida:', session);
+
+        if (!session.id) {
+          throw new Error('No se recibió ID de sesión de Stripe');
+        }
+
+        // Redirigir a Stripe Checkout
+        console.log('Redirigiendo a Stripe con ID:', session.id);
         const result = await stripe.redirectToCheckout({
           sessionId: session.id
         });
 
         if (result.error) {
-          alert(result.error.message);
+          console.error('Error de Stripe:', result.error);
+          throw new Error(result.error.message);
         }
+
       } catch (error) {
-        console.error("Hubo un problema al abrir Stripe:", error);
-        alert("Hubo un problema al procesar tu pago.");
+        console.error("Error completo:", error);
+        
+        // Mostrar error al usuario
+        alert(`Error al procesar el pago: ${error.message}`);
+        
+        // Restaurar botón
+        checkoutButton.disabled = false;
+        checkoutButton.textContent = 'Proceder al pago seguro';
+        loadingDiv.style.display = 'none';
+      }
+    });
+
+    // Mejorar UX con eventos de input
+    document.getElementById('email').addEventListener('input', function() {
+      if (this.value.trim() && validateEmail(this.value.trim())) {
+        document.getElementById('email-error').style.display = 'none';
+      }
+    });
+
+    document.getElementById('phone').addEventListener('input', function() {
+      if (this.value.trim() && validatePhone(this.value.trim())) {
+        document.getElementById('phone-error').style.display = 'none';
+      }
+    });
+
+    document.getElementById('schedule').addEventListener('change', function() {
+      if (this.value) {
+        document.getElementById('schedule-error').style.display = 'none';
       }
     });
   </script>
