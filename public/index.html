@@ -272,7 +272,9 @@
         console.log('Respuesta del servidor:', response.status);
         
         if (!response.ok) {
-          throw new Error(`Error del servidor: ${response.status}`);
+          const errorData = await response.json().catch(() => ({}));
+          console.error('Error response:', errorData);
+          throw new Error(`Error del servidor: ${response.status} - ${errorData.message || errorData.error || 'Error desconocido'}`);
         }
 
         const session = await response.json();

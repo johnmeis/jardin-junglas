@@ -18,12 +18,18 @@ app.get('/', (req, res) => {
 });
 
 app.post('/create-checkout-session', async (req, res) => {
+  console.log('=== INICIO CREATE CHECKOUT SESSION ===');
+  console.log('Body recibido:', req.body);
+  
   const { email, phone, schedule } = req.body;
  
   // Validación de datos
   if (!email || !phone || !schedule) {
+    console.log('Error: Campos faltantes', { email: !!email, phone: !!phone, schedule: !!schedule });
     return res.status(400).json({ error: 'Todos los campos son requeridos' });
   }
+
+  console.log('Datos validados correctamente:', { email, phone, schedule });
 
   // Guarda los datos del cliente
   const clientData = { 
@@ -44,20 +50,28 @@ app.post('/create-checkout-session', async (req, res) => {
     }
     clients.push(clientData);
     fs.writeFileSync(clientsPath, JSON.stringify(clients, null, 2));
+    console.log('Cliente guardado en archivo JSON');
   } catch (fileError) {
     console.error('Error manejando archivo de clientes:', fileError);
+    // No fallar por este error, continuar con el pago
   }
 
   try {
+    // Verificar que Stripe esté configurado
+    console.log('Stripe Secret Key presente:', !!process.env.STRIPE_SECRET_KEY);
+    
     // Obtener el dominio base correctamente
     const protocol = req.headers['x-forwarded-proto'] || (req.secure ? 'https' : 'http');
     const host = req.headers.host;
     const baseUrl = `${protocol}://${host}`;
 
-    console.log('Base URL para Stripe:', baseUrl); // Para debug
+    console.log('Protocol:', protocol);
+    console.log('Host:', host);
+    console.log('Base URL para Stripe:', baseUrl);
 
+    console.log('Creando sesión de Stripe...');
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card', 'Affirm'],
+      payment_method_types: ['card', 'affirm'],
       line_items: [{
         price_data: {
           currency: 'usd',
@@ -80,11 +94,29 @@ app.post('/create-checkout-session', async (req, res) => {
       }
     });
 
-    console.log('Sesión de Stripe creada:', session.id); // Para debug
-    res.json({ id: session.id, url: session.url });
+    console.log('Sesión de Stripe creada exitosamente:', session.id);
+    console.log('URL de la sesión:', session.url);
+    
+    res.json({ 
+      id: session.id, 
+      url: session.url,
+      success: true 
+    });
   } catch (err) {
-    console.error("Error al crear sesión de Stripe:", err);
-    res.status(500).json({ error: 'Error interno del servidor', details: err.message });
+    console.error("=== ERROR DETALLADO DE STRIPE ===");
+    console.error("Tipo de error:", err.type);
+    console.error("Código de error:", err.code);
+    console.error("Mensaje:", err.message);
+    console.error("Stack completo:", err.stack);
+    console.error("Objeto de error completo:", JSON.stringify(err, null, 2));
+    
+    // Respuesta de error más detallada
+    res.status(500).json({ 
+      error: 'Error interno del servidor', 
+      message: err.message,
+      type: err.type || 'unknown',
+      code: err.code || 'unknown'
+    });
   }
 });
 
