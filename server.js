@@ -57,7 +57,7 @@ app.post('/create-checkout-session', async (req, res) => {
     console.log('Base URL para Stripe:', baseUrl); // Para debug
 
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
+      payment_method_types: ['card', 'Affirm'],
       line_items: [{
         price_data: {
           currency: 'usd',
