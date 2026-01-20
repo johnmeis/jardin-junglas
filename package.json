@@ -1,9 +1,8 @@
 {
   "name": "jardin-web",
   "version": "1.0.0",
-  "description": "Página web de servicios de jardinería con Stripe y fondo dinámico",
-  "main": "server.js",
-  "scripts": {
+  "description": "Página web de servicios de jardinería con square y fondo dinámico",
+  "main": "server.js",  "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
