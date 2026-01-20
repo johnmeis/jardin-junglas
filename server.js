@@ -73,7 +73,7 @@ app.post('/process-payment', async (req, res) => {
         currency
       },
       idempotencyKey: require('crypto').randomBytes(22).toString('hex'),
-      referenceId: `jardineria-${Date.now()}`
+      referenceId: `jardinería-${Date.now()}`
     });
 
     console.log('Pago con Square creado exitosamente:', payment.payment.id);
