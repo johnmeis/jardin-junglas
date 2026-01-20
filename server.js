@@ -2,8 +2,15 @@
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const fs = require('fs');
+
+// === Agregar Square SDK ===
+const { Client, Environment } = require('square');
+
+const squareClient = new Client({
+  accessToken: process.env.SQUARE_ACCESS_TOKEN,
+  environment: Environment.Sandbox // Cambia a Production en producción
+});
 
 const app = express();
 
@@ -17,30 +24,31 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.post('/create-checkout-session', async (req, res) => {
-  console.log('=== INICIO CREATE CHECKOUT SESSION ===');
+// === NUEVA RUTA: Procesar pago con Square ===
+app.post('/process-payment', async (req, res) => {
+  console.log('=== INICIO PROCESO DE PAGO CON SQUARE ===');
   console.log('Body recibido:', req.body);
   
-  const { email, phone, schedule } = req.body;
+  const { email, phone, schedule, sourceId, amount, currency } = req.body;
  
   // Validación de datos
-  if (!email || !phone || !schedule) {
-    console.log('Error: Campos faltantes', { email: !!email, phone: !!phone, schedule: !!schedule });
+  if (!email || !phone || !schedule || !sourceId || !amount || !currency) {
+    console.log('Error: Campos faltantes');
     return res.status(400).json({ error: 'Todos los campos son requeridos' });
   }
 
   console.log('Datos validados correctamente:', { email, phone, schedule });
 
-  // Guarda los datos del cliente
+  // Guarda los datos del cliente (igual que antes)
   const clientData = { 
     email, 
     phone, 
     schedule, 
-    paid: false, 
-    timestamp: new Date().toISOString() 
+    paid: true, // Ahora sí está pagado
+    timestamp: new Date().toISOString(),
+    paymentProvider: 'square'
   };
  
-  // Lee y escribe en clients.json
   try {
     const clientsPath = path.join(__dirname, 'clients.json');
     let clients = [];
@@ -53,97 +61,43 @@ app.post('/create-checkout-session', async (req, res) => {
     console.log('Cliente guardado en archivo JSON');
   } catch (fileError) {
     console.error('Error manejando archivo de clientes:', fileError);
-    // No fallar por este error, continuar con el pago
   }
 
   try {
-    // Verificar que Stripe esté configurado
-    console.log('Stripe Secret Key presente:', !!process.env.STRIPE_SECRET_KEY);
-    
-    // Obtener el dominio base correctamente
-    const protocol = req.headers['x-forwarded-proto'] || (req.secure ? 'https' : 'http');
-    const host = req.headers.host;
-    const baseUrl = `${protocol}://${host}`;
-
-    console.log('Protocol:', protocol);
-    console.log('Host:', host);
-    console.log('Base URL para Stripe:', baseUrl);
-
-    console.log('Creando sesión de Stripe...');
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card', 'affirm'],
-      line_items: [{
-        price_data: {
-          currency: 'usd',
-          product_data: {
-            name: 'Servicio de Jardinería',
-            description: `Horario: ${schedule}, Email: ${email}`
-          },
-          unit_amount: 8990, // $89.90 USD
-        },
-        quantity: 1
-      }],
-      mode: 'payment',
-      success_url: `${baseUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${baseUrl}/cancel`,
-      customer_email: email,
-      metadata: {
-        email: email,
-        phone: phone,
-        schedule: schedule
-      }
+    // Procesar pago con Square
+    console.log('Creando pago con Square...');
+    const payment = await squareClient.paymentsApi.createPayment({
+      sourceId,
+      amountMoney: {
+        amount,
+        currency
+      },
+      idempotencyKey: require('crypto').randomBytes(22).toString('hex'),
+      referenceId: `jardineria-${Date.now()}`
     });
 
-    console.log('Sesión de Stripe creada exitosamente:', session.id);
-    console.log('URL de la sesión:', session.url);
+    console.log('Pago con Square creado exitosamente:', payment.payment.id);
     
     res.json({ 
-      id: session.id, 
-      url: session.url,
-      success: true 
+      success: true,
+      paymentId: payment.payment.id
     });
   } catch (err) {
-    console.error("=== ERROR DETALLADO DE STRIPE ===");
-    console.error("Tipo de error:", err.type);
-    console.error("Código de error:", err.code);
+    console.error("=== ERROR DETALLADO DE SQUARE ===");
     console.error("Mensaje:", err.message);
-    console.error("Stack completo:", err.stack);
-    console.error("Objeto de error completo:", JSON.stringify(err, null, 2));
+    console.error("Código:", err.code);
+    console.error("Detalles:", JSON.stringify(err, null, 2));
     
-    // Respuesta de error más detallada
     res.status(500).json({ 
-      error: 'Error interno del servidor', 
-      message: err.message,
-      type: err.type || 'unknown',
-      code: err.code || 'unknown'
+      success: false,
+      error: 'Error al procesar el pago',
+      message: err.message
     });
   }
 });
 
-// Webhook para confirmar pagos (opcional pero recomendado)
-app.post('/webhook', express.raw({type: 'application/json'}), (req, res) => {
-  const sig = req.headers['stripe-signature'];
-  let event;
-
-  try {
-    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
-  } catch (err) {
-    console.log(`Webhook signature verification failed.`, err.message);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
-  }
-
-  if (event.type === 'checkout.session.completed') {
-    const session = event.data.object;
-    console.log('Pago completado:', session.id);
-    // Aquí puedes actualizar el estado del cliente a "paid: true"
-  }
-
-  res.json({received: true});
-});
-
-// Páginas de éxito y cancelación mejoradas
+// Páginas de éxito y cancelación (sin cambios)
 app.get('/success', (req, res) => {
-  const sessionId = req.query.session_id;
   res.send(`
     <!DOCTYPE html>
     <html lang="es">
@@ -163,7 +117,6 @@ app.get('/success', (req, res) => {
         <h1>¡Pago Exitoso!</h1>
         <p>Tu pago ha sido procesado correctamente.</p>
         <p>Nos pondremos en contacto contigo pronto.</p>
-        ${sessionId ? `<p><small>ID de sesión: ${sessionId}</small></p>` : ''}
         <button onclick="window.location.href='/'" style="background: #4caf50; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">Volver al inicio</button>
       </div>
     </body>
@@ -198,7 +151,7 @@ app.get('/cancel', (req, res) => {
   `);
 });
 
-// Rutas para ver clientes
+// Rutas para ver clientes (sin cambios)
 app.get('/clientes', (req, res) => {
   const clientsPath = path.join(__dirname, 'clients.json');
   if (!fs.existsSync(clientsPath)) {

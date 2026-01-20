@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Jardinería Pro - Pagar</title>
-  <!-- Cargar Stripe -->
-  <script src="https://js.stripe.com/v3/"></script>
+  <!-- Cargar Square SDK -->
+  <script src="https://sandbox.web.squarecdn.com/v1/square.js"></script>
   <!-- Estilos básicos -->
   <style>
     body {
@@ -120,9 +120,6 @@
       text-align: center;
       margin-top: 1rem;
     }
-    .security-info i {
-      margin-right: 5px;
-    }
   </style>
 </head>
 <body>
@@ -161,169 +158,136 @@
         <div class="error" id="schedule-error"></div>
       </div>
 
+      <!-- Campo de tarjeta de Square -->
+      <div class="form-group">
+        <label for="card-container">Tarjeta de crédito/débito</label>
+        <div id="card-container" style="height: 40px; margin-top: 8px;"></div>
+        <div id="card-errors" class="error" style="display: none;"></div>
+      </div>
+
       <div class="btn-container">
         <button type="submit" id="checkout-button">
-          Pagar con Tarjeta o Affirm
+          Pagar $89.90 USD
         </button>
       </div>
 
-      <div class="loading" id="loading">
-        <p>🔄 Redirigiendo a Stripe...</p>
-      </div>
-
       <div class="security-info">
-        🔒 Pago seguro procesado por Stripe
+        🔒 Pago seguro procesado por Square
       </div>
     </form>
   </div>
 
-  <!-- Script de Stripe -->
+  <!-- Script de Square -->
   <script>
-    // Inicializar Stripe con tu clave pública
-    const stripe = Stripe('pk_test_51ReSRVQQL3g2vHegQXe1EM7hOnVNCXuYR9jHCtQnglsRXFEAzPW7fnryzT7i4uNeJJwut5VBe3mz0AkQIpa7mhs5001xeKKxy7');
-    
-    const form = document.getElementById("payment-form");
-    const checkoutButton = document.getElementById("checkout-button");
-    const loadingDiv = document.getElementById("loading");
+    // === Configuración de Square ===
+    const appId = 'sandbox-sq0idb-9dW_gWtqquCt6McnvKUDTg'; // ← ¡Cambia esto!
+    const locationId = 'L7PFMAX4YBGCJ'; // ← ¡Cambia esto!
 
-    // Función para mostrar errores
-    function showError(fieldId, message) {
-      const errorDiv = document.getElementById(fieldId + '-error');
-      errorDiv.textContent = message;
-      errorDiv.style.display = 'block';
-    }
+    const payments = Square.payments(appId, locationId);
+    let card;
 
-    // Función para limpiar errores
-    function clearErrors() {
-      const errors = document.querySelectorAll('.error');
-      errors.forEach(error => {
-        error.style.display = 'none';
-        error.textContent = '';
-      });
-    }
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        card = await payments.card();
+        await card.attach('#card-container');
+      } catch (e) {
+        console.error('Error al cargar Square:', e);
+        document.getElementById('card-errors').textContent = 'Error al cargar el formulario de pago.';
+        document.getElementById('card-errors').style.display = 'block';
+      }
+    });
 
-    // Validación de email
+    // === Validaciones existentes (sin cambios) ===
     function validateEmail(email) {
       const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       return re.test(email);
     }
 
-    // Validación de teléfono básica
     function validatePhone(phone) {
       const re = /^[\+]?[\d\s\-\(\)]{10,}$/;
       return re.test(phone.replace(/\s/g, ''));
     }
 
-    form.addEventListener("submit", async function(e) {
+    function showError(fieldId, message) {
+      const errorDiv = document.getElementById(fieldId + '-error');
+      if (errorDiv) {
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+      }
+    }
+
+    function clearErrors() {
+      document.querySelectorAll('.error').forEach(el => {
+        el.style.display = 'none';
+        el.textContent = '';
+      });
+    }
+
+    // === Manejo del formulario ===
+    document.getElementById('payment-form').addEventListener('submit', async (e) => {
       e.preventDefault();
-      
-      // Limpiar errores previos
       clearErrors();
-      
-      // Obtener valores del formulario
+
       const email = document.getElementById("email").value.trim();
       const phone = document.getElementById("phone").value.trim();
       const schedule = document.getElementById("schedule").value;
-      
-      // Validaciones
+
       let hasErrors = false;
-      
-      if (!email) {
-        showError('email', 'El correo electrónico es requerido');
-        hasErrors = true;
-      } else if (!validateEmail(email)) {
-        showError('email', 'Ingresa un correo electrónico válido');
+      if (!email || !validateEmail(email)) {
+        showError('email', 'Correo inválido');
         hasErrors = true;
       }
-      
-      if (!phone) {
-        showError('phone', 'El teléfono es requerido');
-        hasErrors = true;
-      } else if (!validatePhone(phone)) {
-        showError('phone', 'Ingresa un número de teléfono válido');
+      if (!phone || !validatePhone(phone)) {
+        showError('phone', 'Teléfono inválido');
         hasErrors = true;
       }
-      
       if (!schedule) {
-        showError('schedule', 'Debes seleccionar un horario');
+        showError('schedule', 'Selecciona un horario');
         hasErrors = true;
-      }
-      
-      if (hasErrors) {
-        return;
       }
 
-      // Deshabilitar botón y mostrar loading
-      checkoutButton.disabled = true;
-      checkoutButton.textContent = 'Procesando...';
-      loadingDiv.style.display = 'block';
+      if (hasErrors) return;
+
+      // Deshabilitar botón
+      const button = document.getElementById('checkout-button');
+      button.disabled = true;
+      button.textContent = 'Procesando...';
 
       try {
-        console.log('Enviando datos al servidor:', { email, phone, schedule });
-        
-        const response = await fetch("/create-checkout-session", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ email, phone, schedule })
-        });
-
-        console.log('Respuesta del servidor:', response.status);
-        
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          console.error('Error response:', errorData);
-          throw new Error(`Error del servidor: ${response.status} - ${errorData.message || errorData.error || 'Error desconocido'}`);
+        // Crear token de tarjeta
+        const tokenResult = await card.tokenize();
+        if (tokenResult.status !== 'OK') {
+          throw new Error(tokenResult.errors.map(e => e.message).join(', '));
         }
 
-        const session = await response.json();
-        console.log('Sesión recibida:', session);
-
-        if (!session.id) {
-          throw new Error('No se recibió ID de sesión de Stripe');
-        }
-
-        // Redirigir a Stripe Checkout
-        console.log('Redirigiendo a Stripe con ID:', session.id);
-        const result = await stripe.redirectToCheckout({
-          sessionId: session.id
+        // Enviar datos + token a tu backend
+        const response = await fetch('/process-payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sourceId: tokenResult.token,
+            email,
+            phone,
+            schedule,
+            amount: 8990, // $89.90 en centavos
+            currency: 'USD'
+          })
         });
 
-        if (result.error) {
-          console.error('Error de Stripe:', result.error);
-          throw new Error(result.error.message);
+        const result = await response.json();
+
+        if (result.success) {
+          alert('✅ ¡Pago exitoso! Gracias por confiar en Jardinería Pro.');
+          window.location.href = '/success';
+        } else {
+          throw new Error(result.error || 'Error en el pago');
         }
 
       } catch (error) {
-        console.error("Error completo:", error);
-        
-        // Mostrar error al usuario
-        alert(`Error al procesar el pago: ${error.message}`);
-        
-        // Restaurar botón
-        checkoutButton.disabled = false;
-        checkoutButton.textContent = 'Pagar con Tarjeta o Affirm';
-        loadingDiv.style.display = 'none';
-      }
-    });
-
-    // Mejorar UX con eventos de input
-    document.getElementById('email').addEventListener('input', function() {
-      if (this.value.trim() && validateEmail(this.value.trim())) {
-        document.getElementById('email-error').style.display = 'none';
-      }
-    });
-
-    document.getElementById('phone').addEventListener('input', function() {
-      if (this.value.trim() && validatePhone(this.value.trim())) {
-        document.getElementById('phone-error').style.display = 'none';
-      }
-    });
-
-    document.getElementById('schedule').addEventListener('change', function() {
-      if (this.value) {
-        document.getElementById('schedule-error').style.display = 'none';
+        console.error('Error:', error);
+        alert('❌ Error: ' + error.message);
+        button.disabled = false;
+        button.textContent = 'Pagar $89.90 USD';
       }
     });
   </script>
